@@ -1,0 +1,123 @@
+﻿@page "/country/{name}"
+@inject HttpClient Http
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
+<PageTitle>Country Details</PageTitle>
+
+<h1>Country Details</h1>
+
+@if (country == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+        <h2>@country.Name.Common (@country.Cca2)</h2>
+        <img src="@country.Flags.Png" alt="@country.Name.Common flag" width="100" />
+        <p><strong>Official Name:</strong> @country.Name.Official</p>
+        <p><strong>Capital:</strong> @string.Join(", ", country.Capital)</p>
+        <p><strong>Region:</strong> @country.Region (@country.Subregion)</p>
+        <p><strong>Area:</strong> @country.Area km²</p>
+        <p><strong>Population:</strong> @country.Population</p>
+        <p><strong>Currencies:</strong> @string.Join(", ", country.Currencies.Select(c => $"{c.Key} ({c.Value.Name} - {c.Value.Symbol})"))</p>
+        <p><strong>Languages:</strong> @string.Join(", ", country.Languages.Values)</p>
+        <p><strong>Timezone:</strong> @string.Join(", ", country.Timezones)</p>
+        <p><strong>Independent:</strong> @(country.Independent ? "Yes" : "No")</p>
+        <p><strong>Google Maps:</strong> <a href="@country.Maps.GoogleMaps" target="_blank">View on Google Maps</a></p>
+        <p><strong>OpenStreetMap:</strong> <a href="@country.Maps.OpenStreetMaps" target="_blank">View on OpenStreetMap</a></p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Name { get; set; }
+
+    private CountryDetail? country;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(Name))
+        {
+            var json = await Http.GetStringAsync($"https://restcountries.com/v3.1/name/{Name}?fullText=true");
+            var countries = JsonSerializer.Deserialize<CountryDetail[]>(json);
+            country = countries?.FirstOrDefault();
+        }
+    }
+
+    public class CountryDetail
+    {
+        [JsonPropertyName("name")]
+        public NameInfo Name { get; set; }
+
+        [JsonPropertyName("cca2")]
+        public string Cca2 { get; set; }
+
+        [JsonPropertyName("capital")]
+        public List<string> Capital { get; set; }
+
+        [JsonPropertyName("region")]
+        public string Region { get; set; }
+
+        [JsonPropertyName("subregion")]
+        public string Subregion { get; set; }
+
+        [JsonPropertyName("area")]
+        public double Area { get; set; }
+
+        [JsonPropertyName("population")]
+        public int Population { get; set; }
+
+        [JsonPropertyName("currencies")]
+        public Dictionary<string, CurrencyInfo> Currencies { get; set; }
+
+        [JsonPropertyName("languages")]
+        public Dictionary<string, string> Languages { get; set; }
+
+        [JsonPropertyName("timezones")]
+        public List<string> Timezones { get; set; }
+
+        [JsonPropertyName("independent")]
+        public bool Independent { get; set; }
+
+        [JsonPropertyName("flags")]
+        public FlagInfo Flags { get; set; }
+
+        [JsonPropertyName("maps")]
+        public MapInfo Maps { get; set; }
+    }
+
+    public class NameInfo
+    {
+        [JsonPropertyName("common")]
+        public string Common { get; set; }
+
+        [JsonPropertyName("official")]
+        public string Official { get; set; }
+    }
+
+    public class CurrencyInfo
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("symbol")]
+        public string Symbol { get; set; }
+    }
+
+    public class FlagInfo
+    {
+        [JsonPropertyName("png")]
+        public string Png { get; set; }
+    }
+
+    public class MapInfo
+    {
+        [JsonPropertyName("googleMaps")]
+        public string GoogleMaps { get; set; }
+
+        [JsonPropertyName("openStreetMaps")]
+        public string OpenStreetMaps { get; set; }
+    }
+}

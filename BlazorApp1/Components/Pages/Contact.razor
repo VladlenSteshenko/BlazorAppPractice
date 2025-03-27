@@ -1,0 +1,83 @@
+﻿@page "/contact"
+@inject HttpClient Http
+@inject IConfiguration Configuration
+
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Net.Http.Json
+@using System.Text.Encodings.Web
+@using System.ComponentModel.DataAnnotations
+
+<h1>Contact Form</h1>
+
+<EditForm Model="@formData" OnValidSubmit="@SendMessage" FormName="ContactForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>Name:</label>
+        <InputText class="form-control" @bind-Value="formData.Name" />
+        <ValidationMessage For="@(() => formData.Name)" />
+    </div>
+
+    <div class="form-group">
+        <label>Country:</label>
+        <InputText class="form-control" @bind-Value="formData.Country" />
+        <ValidationMessage For="@(() => formData.Country)" />
+    </div>
+
+    <div class="form-group">
+        <label>Message:</label>
+        <InputTextArea class="form-control" @bind-Value="formData.Message" />
+        <ValidationMessage For="@(() => formData.Message)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Send</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(responseMessage))
+{
+    <p style="color: green">@responseMessage</p>
+}
+
+@code {
+    [SupplyParameterFromForm]
+    private FormData formData { get; set; } = new();
+    private string responseMessage = "";
+
+    private string botToken => Configuration["TelegramBot:BotToken"];
+    private string chatId => Configuration["TelegramBot:ChatId"];
+
+    private async Task SendMessage()
+    {
+        responseMessage = "";
+
+        string messageText = $"Name: {formData.Name}\nCountry: {formData.Country}\nMessage: {formData.Message}";
+        string encodedMessage = UrlEncoder.Default.Encode(messageText);
+
+        string url = $"https://api.telegram.org/bot{botToken}/sendMessage?chat_id={chatId}&text={encodedMessage}";
+        var result = await Http.GetAsync(url);
+
+        if (result.IsSuccessStatusCode)
+        {
+            responseMessage = "Message sent successfully!";
+            formData = new();
+        }
+        else
+        {
+            string errorDetails = await result.Content.ReadAsStringAsync();
+            responseMessage = $"Failed to send message. Error: {errorDetails}";
+        }
+    }
+
+    public class FormData
+    {
+        [Required(ErrorMessage = "Name is required")]
+        public string Name { get; set; }
+
+        [Required(ErrorMessage = "Country is required")]
+        public string Country { get; set; }
+
+        [Required(ErrorMessage = "Message is required")]
+        public string Message { get; set; }
+    }
+}

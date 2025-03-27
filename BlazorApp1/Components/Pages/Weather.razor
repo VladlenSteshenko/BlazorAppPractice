@@ -1,0 +1,92 @@
+﻿@page "/weather"
+@inject HttpClient Http
+@using System.Text.Json
+@using System.Collections.Generic
+@using System.Text.Json.Serialization
+@using System.Linq
+@attribute [StreamRendering]
+
+<PageTitle>Countries</PageTitle>
+
+<h1>Countries</h1>
+
+@if (countries == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Capital</th>
+                <th>Currencies</th>
+                <th>Languages</th>
+                <th>Area</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var country in countries)
+            {
+                <tr>
+                    <td>@country.Name.Common</td>
+                    <td>@string.Join(", ", country.Capital)</td>
+                    <td>@string.Join(", ", country.Currencies.Select(c => $"{c.Key} ({c.Value.Name} - {c.Value.Symbol})"))</td>
+                    <td>@string.Join(", ", country.Languages.Select(l => l.Value))</td>
+                    <td>@country.Area</td>
+                    <td>
+                        <a href="/country/@country.Name.Common" class="btn btn-primary">Open</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private Country[]? countries;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var json = await Http.GetStringAsync("https://restcountries.com/v3.1/all?fields=name,capital,currencies,languages,area");
+        countries = JsonSerializer.Deserialize<Country[]>(json);
+    }
+
+    public class Country
+    {
+        [JsonPropertyName("name")]
+        public NameInfo Name { get; set; }
+
+        [JsonPropertyName("capital")]
+        public List<string> Capital { get; set; }
+
+        [JsonPropertyName("currencies")]
+        public Dictionary<string, CurrencyInfo> Currencies { get; set; }
+
+        [JsonPropertyName("languages")]
+        public Dictionary<string, string> Languages { get; set; }
+
+        [JsonPropertyName("area")]
+        public double Area { get; set; }
+    }
+
+    public class NameInfo
+    {
+        [JsonPropertyName("common")]
+        public string Common { get; set; }
+
+        [JsonPropertyName("official")]
+        public string Official { get; set; }
+    }
+
+    public class CurrencyInfo
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("symbol")]
+        public string Symbol { get; set; }
+    }
+}
