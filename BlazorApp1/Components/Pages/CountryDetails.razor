@@ -2,6 +2,8 @@
 @inject HttpClient Http
 @using System.Text.Json
 @using System.Text.Json.Serialization
+@using System.ComponentModel.DataAnnotations
+@inject BlazorApp1.CountryService CountryService
 
 <PageTitle>Country Details</PageTitle>
 
@@ -32,7 +34,7 @@ else
 
 @code {
     [Parameter]
-    public string? Name { get; set; }
+    public string Name { get; set; }
 
     private CountryDetail? country;
 
@@ -40,84 +42,8 @@ else
     {
         if (!string.IsNullOrWhiteSpace(Name))
         {
-            var json = await Http.GetStringAsync($"https://restcountries.com/v3.1/name/{Name}?fullText=true");
-            var countries = JsonSerializer.Deserialize<CountryDetail[]>(json);
-            country = countries?.FirstOrDefault();
+            country = await CountryService.GetCountryDetailAsync(Name);
         }
     }
-
-    public class CountryDetail
-    {
-        [JsonPropertyName("name")]
-        public NameInfo Name { get; set; }
-
-        [JsonPropertyName("cca2")]
-        public string Cca2 { get; set; }
-
-        [JsonPropertyName("capital")]
-        public List<string> Capital { get; set; }
-
-        [JsonPropertyName("region")]
-        public string Region { get; set; }
-
-        [JsonPropertyName("subregion")]
-        public string Subregion { get; set; }
-
-        [JsonPropertyName("area")]
-        public double Area { get; set; }
-
-        [JsonPropertyName("population")]
-        public int Population { get; set; }
-
-        [JsonPropertyName("currencies")]
-        public Dictionary<string, CurrencyInfo> Currencies { get; set; }
-
-        [JsonPropertyName("languages")]
-        public Dictionary<string, string> Languages { get; set; }
-
-        [JsonPropertyName("timezones")]
-        public List<string> Timezones { get; set; }
-
-        [JsonPropertyName("independent")]
-        public bool Independent { get; set; }
-
-        [JsonPropertyName("flags")]
-        public FlagInfo Flags { get; set; }
-
-        [JsonPropertyName("maps")]
-        public MapInfo Maps { get; set; }
-    }
-
-    public class NameInfo
-    {
-        [JsonPropertyName("common")]
-        public string Common { get; set; }
-
-        [JsonPropertyName("official")]
-        public string Official { get; set; }
-    }
-
-    public class CurrencyInfo
-    {
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        [JsonPropertyName("symbol")]
-        public string Symbol { get; set; }
-    }
-
-    public class FlagInfo
-    {
-        [JsonPropertyName("png")]
-        public string Png { get; set; }
-    }
-
-    public class MapInfo
-    {
-        [JsonPropertyName("googleMaps")]
-        public string GoogleMaps { get; set; }
-
-        [JsonPropertyName("openStreetMaps")]
-        public string OpenStreetMaps { get; set; }
-    }
 }
+

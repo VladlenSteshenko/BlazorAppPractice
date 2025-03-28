@@ -1,4 +1,10 @@
 using BlazorApp1.Components;
+using BlazorApp1;
+using Microsoft.EntityFrameworkCore;
+using SQLitePCL;
+
+Batteries.Init();
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,21 +13,36 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpClient();
 
-// Add configuration
-builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+// Configure EF Core to use SQLite with our connection string.
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register our country service.
+builder.Services.AddScoped<CountryService>();
 
 var app = builder.Build();
+
+// Apply migrations and seed data.
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<ApplicationDbContext>();
+
+    // Automatically apply pending migrations (code-first migration for this app).
+    context.Database.Migrate();
+
+    var countryService = services.GetRequiredService<CountryService>();
+    await countryService.SeedCountriesAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 app.UseAntiforgery();
 
@@ -29,3 +50,4 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
